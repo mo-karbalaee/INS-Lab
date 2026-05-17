@@ -94,36 +94,37 @@ def consolidate_recording(recording_dict, target_fs=2000, label_fs=60, n_biosign
     print(f"  Duration: {total_samples / target_fs:.2f}s")
 
     # Plot example: all channels stacked and sum plot with ground truth overlay
-    plot_samples = min(total_samples, int(target_fs * 50))  # plot max 2 seconds for visibility
-    plot_times = consolidated_timings[:plot_samples]
-    plot_signals = biosignal_consolidated[:, :plot_samples]
+    if False:
+        plot_samples = min(total_samples, int(target_fs * 50))
+        plot_times = consolidated_timings[:plot_samples]
+        plot_signals = biosignal_consolidated[:, :plot_samples]
 
-    max_amplitude = np.max(np.abs(plot_signals))
-    offset = max_amplitude * 4.0
-    stacked = plot_signals + np.arange(plot_signals.shape[0])[:, None] * offset
+        max_amplitude = np.max(np.abs(plot_signals))
+        offset = max_amplitude * 4.0
+        stacked = plot_signals + np.arange(plot_signals.shape[0])[:, None] * offset
 
-    fig, axs = plt.subplots(2, 1, figsize=(14, 8), sharex=True)
-    for ch in range(stacked.shape[0]):
-        axs[0].plot(plot_times, stacked[ch], lw=0.8)
-    axs[0].set_title('Stacked biosignal channels (first 2 seconds)')
-    axs[0].set_ylabel('channel + offset')
-    axs[0].set_yticks(np.arange(plot_signals.shape[0]) * offset)
-    axs[0].set_yticklabels([f'C{ch}' for ch in range(plot_signals.shape[0])])
-    axs[0].grid(True, alpha=0.2)
+        fig, axs = plt.subplots(2, 1, figsize=(14, 8), sharex=True)
+        for ch in range(stacked.shape[0]):
+            axs[0].plot(plot_times, stacked[ch], lw=0.8)
+        axs[0].set_title('Stacked biosignal channels (first 2 seconds)')
+        axs[0].set_ylabel('channel + offset')
+        axs[0].set_yticks(np.arange(plot_signals.shape[0]) * offset)
+        axs[0].set_yticklabels([f'C{ch}' for ch in range(plot_signals.shape[0])])
+        axs[0].grid(True, alpha=0.2)
 
-    sum_signal = np.sum(np.abs(plot_signals), axis=0)
-    gt_example = upsampled_gt[0, :plot_samples]
-    gt_norm = (gt_example - gt_example.min()) / (np.ptp(gt_example) + 1e-9)
-    gt_scaled = gt_norm * (sum_signal.max() - sum_signal.min()) + sum_signal.min()
+        sum_signal = np.sum(np.abs(plot_signals), axis=0)
+        gt_example = upsampled_gt[0, :plot_samples]
+        gt_norm = (gt_example - gt_example.min()) / (np.ptp(gt_example) + 1e-9)
+        gt_scaled = gt_norm * (sum_signal.max() - sum_signal.min()) + sum_signal.min()
 
-    axs[1].plot(plot_times, sum_signal, label='sum(abs(channels))', color='tab:blue')
-    axs[1].plot(plot_times, gt_scaled, label='ground truth (scaled)', color='tab:red', alpha=0.75)
-    axs[1].set_title('Summed channel magnitude and ground truth overlay')
-    axs[1].set_xlabel('time (s)')
-    axs[1].legend()
-    axs[1].grid(True, alpha=0.2)
-    plt.tight_layout()
-    plt.show()
+        axs[1].plot(plot_times, sum_signal, label='sum(abs(channels))', color='tab:blue')
+        axs[1].plot(plot_times, gt_scaled, label='ground truth (scaled)', color='tab:red', alpha=0.75)
+        axs[1].set_title('Summed channel magnitude and ground truth overlay')
+        axs[1].set_xlabel('time (s)')
+        axs[1].legend()
+        axs[1].grid(True, alpha=0.2)
+        plt.tight_layout()
+        plt.show()
 
     # Return consolidated data
     return {
@@ -140,18 +141,135 @@ def consolidate_recording(recording_dict, target_fs=2000, label_fs=60, n_biosign
     }
 
 
-path_to_raw = r"C:\Users\leonv\AIBE_LAB\aibe_ins_lab_recordings\raw"
+def bandpass_filter(signal, fs=2000, lowcut=20, highcut=300, order=4):
+    """Apply a Butterworth bandpass filter to a 1D signal."""
+    try:
+        from scipy.signal import butter, filtfilt
+    except ImportError as e:
+        raise ImportError("scipy is required for bandpass filtering. Install it with pip install scipy") from e
+
+    nyquist = fs / 2.0
+    low = lowcut / nyquist
+    high = highcut / nyquist
+    b, a = butter(order, [low, high], btype='band')
+    return filtfilt(b, a, signal)
+
+
+def plot_recording_channels(recording_dict,
+                             channels_per_page=8,
+                             target_fs=2000,
+                             label_fs=60,
+                             n_biosignal_channels=32,
+                             max_seconds=15):
+    """Plot all biosignal channels in groups of channels_per_page plus a ground truth subplot.
+
+    Args:
+        recording_dict: recording dict from dataset
+        channels_per_page: number of biosignal channels shown per figure
+        target_fs: target signal frequency used during consolidation
+        label_fs: original label sampling frequency, unused here but kept for API compatibility
+        n_biosignal_channels: number of biosignal channels to use
+        max_seconds: maximum duration shown in seconds
+    """
+    consolidated = consolidate_recording(
+        recording_dict,
+        target_fs=target_fs,
+        label_fs=label_fs,
+        n_biosignal_channels=n_biosignal_channels
+    )
+
+    biosignal = consolidated['biosignal']
+    ground_truth = consolidated['ground_truth']
+    timings = consolidated['timings']
+    task = consolidated['metadata'].get('task', 'unknown')
+    filename = consolidated['metadata'].get('filename', 'recording')
+    active_gt_idx = consolidated['metadata'].get('active_gesture_idx', None)
+
+    total_samples = biosignal.shape[1]
+    max_samples = min(total_samples, int(max_seconds * target_fs))
+    plot_times = timings[:max_samples]
+
+    # Apply bandpass filtering only for visualization
+    filtered_biosignal = np.zeros_like(biosignal[:, :max_samples])
+    for ch in range(min(biosignal.shape[0], n_biosignal_channels)):
+        filtered_biosignal[ch, :] = bandpass_filter(
+            biosignal[ch, :max_samples],
+            fs=target_fs,
+            lowcut=20,
+            highcut=300,
+            order=4
+        )
+
+    # Fallback: infer active ground truth if metadata did not contain a valid index
+    if active_gt_idx is None or active_gt_idx < 0 or active_gt_idx >= ground_truth.shape[0]:
+        activity = np.sum(np.abs(ground_truth), axis=1)
+        if np.any(activity > 0):
+            active_gt_idx = int(np.argmax(activity))
+        else:
+            active_gt_idx = None
+
+    n_pages = int(np.ceil(n_biosignal_channels / channels_per_page))
+    for page in range(n_pages):
+        start_ch = page * channels_per_page
+        end_ch = min(start_ch + channels_per_page, n_biosignal_channels)
+        page_channels = list(range(start_ch, end_ch))
+
+        n_plots = len(page_channels) + 1  # plus ground truth
+        fig, axs = plt.subplots(n_plots, 1, figsize=(16, 2.4 * n_plots), sharex=True)
+
+        if n_plots == 2:
+            axs = [axs[0], axs[1]]
+
+        # Per-channel plots
+        y_min = np.min(biosignal[page_channels, :max_samples])
+        y_max = np.max(biosignal[page_channels, :max_samples])
+        y_margin = max(1e-3, (y_max - y_min) * 0.05)
+
+        for idx, ch in enumerate(page_channels):
+            ax = axs[idx]
+            ax.plot(plot_times, filtered_biosignal[ch, :max_samples], color='tab:blue', lw=0.7)
+            ax.set_ylabel(f'C{ch}')
+            ax.grid(True, alpha=0.2)
+            ax.set_ylim(y_min - y_margin, y_max + y_margin)
+
+        # Ground truth subplot at the bottom
+        gt_ax = axs[-1]
+        if active_gt_idx is not None:
+            gt_signal = ground_truth[active_gt_idx, :max_samples]
+            gt_ax.plot(plot_times, gt_signal, label=f'GT{active_gt_idx}', color='tab:red', lw=1.2)
+            gt_ax.set_title(f'Active ground truth channel GT{active_gt_idx} for {filename} / {task}')
+            gt_ax.legend(fontsize='small', loc='upper right')
+        else:
+            gt_ax.text(0.5, 0.5, 'No active ground truth channel detected',
+                       ha='center', va='center', transform=gt_ax.transAxes,
+                       color='tab:red', fontsize=12)
+            gt_ax.set_title(f'No active ground truth channel for {filename} / {task}')
+
+        gt_ax.set_ylabel('ground truth')
+        gt_ax.set_xlabel('time (s)')
+        gt_ax.grid(True, alpha=0.2)
+
+        fig.suptitle(f'Channels {start_ch}-{end_ch - 1} plus active ground truth (first {max_seconds}s)', y=0.98)
+        plt.tight_layout(rect=[0, 0, 1, 0.96])
+        plt.show()
+
+
+
+
+
+path_to_raw = r"C:\Users\leonv\AIBE_LAB_new\aibe_ins_lab_recordings\raw"
 ds = dataset(path_to_raw)
 ds.summary()
 
 data_dict = ds.get_data()
 
 # Access a specific recording
-if 'leon' in data_dict and 'Grasp' in data_dict['leon']:
-    recordings_gesture_0 = data_dict['leon']['Grasp']
-    print(f"\nFound {len(recordings_gesture_0)} recordings for leon gesture_0")
+if 'mohammad' in data_dict and 'Grasp' in data_dict['mohammad']:
+    recordings_gesture_0 = data_dict['franzi']['Cellphone']
+    print(f"\nFound {len(recordings_gesture_0)} recordings for mohammad gesture_0")
     recordings_gesture_0_0 = recordings_gesture_0[0]
 consolidated = consolidate_recording(recordings_gesture_0_0)
+plot_recording_channels(recordings_gesture_0_0, channels_per_page=3, max_seconds=15)
 
 print(f"\nConsolidated output:")
 print(f"  biosignal shape: {consolidated['biosignal'].shape}")

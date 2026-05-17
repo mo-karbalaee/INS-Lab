@@ -32,3 +32,12 @@ go to classification -> dataset.py -> run:
 
 
 not finished yet, just raw and structuring, will need training / testing split (maybe not physically but json or so for indexing)
+
+
+# Bad Channels:
+Channel 9 for Leon Grasp... but not for Mohammad peace for example!?
+-> check recordings for bad channels!
+
+Checked... just remove Channel 9 from leons data. Franzi and Mohammads is are fine
+
+Figure out how to deal with bad Channel...

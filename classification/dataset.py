@@ -211,7 +211,7 @@ class dataset:
 
 
 if __name__ == "__main__":
-    path_to_recordings_base = r"C:\Users\leonv\AIBE_LAB\aibe_ins_lab_recordings"
+    path_to_recordings_base = r"C:\Users\leonv\AIBE_LAB_new\aibe_ins_lab_recordings"
     
     # Option 1: Unzip and split raw data (RUN ONCE WHEN YOU HAVE JUST CLONED THE REPO!!!!!!)
     get_data_split(path_to_recordings_base)
