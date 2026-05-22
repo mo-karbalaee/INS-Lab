@@ -178,7 +178,7 @@ class dataset:
     
     def _find_active_gesture(self, ground_truth):
         """
-        Determine which gesture channel (0-8) is primarily active.
+        Determine which gesture channel (0-8) is primarily active... One will be identified for plotting purposes.
         
         Returns:
             int: index of the active gesture (0-8), or None if all zeros
