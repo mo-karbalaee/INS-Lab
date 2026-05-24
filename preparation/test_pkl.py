@@ -1,11 +1,3 @@
-"""
-Test script for EMG recording analysis.
-Demonstrates:
-1. Loading recordings via dataset class
-2. Analyzing ground truth labels
-3. Custom segmentation logic
-"""
-
 import pickle
 import numpy as np
 import pandas as pd
@@ -18,6 +10,8 @@ from sklearn.preprocessing import MinMaxScaler
 sys.path.insert(0, str(Path(__file__).parent))
 from dataset import dataset
 from preprocessing import preprocess
+from repeatability.analyse import analyse_repeatability
+
 
 
 
@@ -386,7 +380,13 @@ preprocessor.remove_bad_channel(bad_channels)
 preprocessor.filter_signal(filter_list)
 segments = preprocessor.cut_signal()
 
-print_segment_lengths(segments)
+# Repeatability:
+repeatability_analyzer = analyse_repeatability(segments, data_dict)
+repeatability_analyzer.get_features()
+repeatability_analyzer.get_df_from_segments()
+repeatability_analyzer.get_repeat_metrics()
+
+#print_segment_lengths(segments)
 
 # Visualize all segments
 plot_all_segments(preprocessor, segments, channel_idx=0, max_segments_per_recording=5)
