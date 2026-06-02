@@ -36,6 +36,7 @@ class analyse_repeatability():
                 # Wave length
                 wl = np.sum(np.abs(np.diff(signal, axis=1)), axis=1)
 
+                #var = np.var(signal, axis=1)
                 # Frequency domain features
                 fft_vals = np.fft.rfft(signal, axis=1)
                 freqs = np.fft.rfftfreq(signal.shape[1], d=1/fs)
@@ -71,14 +72,23 @@ class analyse_repeatability():
         # Plan:
         # need pandas.DataFrame long format 
         # for each features mean, gesture and participant:
-        # get ICC, EMS, MDC
+        # get ICC, EMS, MDC ... gotta think if there are any meaningful questions to answer using these metrics and the current setup. May have a look at within segment vs between segment repeatability
+        # think of standardizing feautres first like for classifciation pipelines?
+        # or also combine standardized feautres into a score and measure repeatability there? probably not...
+
+        # Maybe start with CV and SD -> SEM
+        
         if self.df_repeat.empty:
             print('first generate df using get_df_from_segments')
 
         data_repeat = []
-        for (subject, gesture, feature), df_sub in df.groupby(['subject', 'gesture', 'feature']):
-            
-            print('test')
+        for (subject, gesture, feature), df_sub in self.df_repeat.groupby(['subject', 'gesture', 'feature']):
+            print(df_sub['value'])
+            mean = np.mean(df_sub['value'])
+            std = np.std(df_sub['value'])
+            cv = 100*(std/mean)
+            sem = std / np.sqrt(len(df_sub['value']))
+            # ...
 
     def get_df_from_segments(self):
         # Plan:
