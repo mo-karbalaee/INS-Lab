@@ -11,8 +11,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 from dataset import dataset
 from preprocessing import preprocess
 from repeatability.analyse import analyse_repeatability
-
-
+from repeatability.visualize import vizualize_repeatability
+from classification.preprocess_for_classification import get_data_for_model
+from classification.trainandevalmodel import train_model_for_part
 
 
 
@@ -87,39 +88,6 @@ def consolidate_recording(recording_dict, target_fs=2000, label_fs=60, n_biosign
     print(f"After upsampling ground truth:")
     print(f"  ground_truth: {upsampled_gt.shape}")
     print(f"  Duration: {total_samples / target_fs:.2f}s")
-
-    # Plot example: all channels stacked and sum plot with ground truth overlay
-    if False:
-        plot_samples = min(total_samples, int(target_fs * 50))
-        plot_times = consolidated_timings[:plot_samples]
-        plot_signals = biosignal_consolidated[:, :plot_samples]
-
-        max_amplitude = np.max(np.abs(plot_signals))
-        offset = max_amplitude * 4.0
-        stacked = plot_signals + np.arange(plot_signals.shape[0])[:, None] * offset
-
-        fig, axs = plt.subplots(2, 1, figsize=(14, 8), sharex=True)
-        for ch in range(stacked.shape[0]):
-            axs[0].plot(plot_times, stacked[ch], lw=0.8)
-        axs[0].set_title('Stacked biosignal channels (first 2 seconds)')
-        axs[0].set_ylabel('channel + offset')
-        axs[0].set_yticks(np.arange(plot_signals.shape[0]) * offset)
-        axs[0].set_yticklabels([f'C{ch}' for ch in range(plot_signals.shape[0])])
-        axs[0].grid(True, alpha=0.2)
-
-        sum_signal = np.sum(np.abs(plot_signals), axis=0)
-        gt_example = upsampled_gt[0, :plot_samples]
-        gt_norm = (gt_example - gt_example.min()) / (np.ptp(gt_example) + 1e-9)
-        gt_scaled = gt_norm * (sum_signal.max() - sum_signal.min()) + sum_signal.min()
-
-        axs[1].plot(plot_times, sum_signal, label='sum(abs(channels))', color='tab:blue')
-        axs[1].plot(plot_times, gt_scaled, label='ground truth (scaled)', color='tab:red', alpha=0.75)
-        axs[1].set_title('Summed channel magnitude and ground truth overlay')
-        axs[1].set_xlabel('time (s)')
-        axs[1].legend()
-        axs[1].grid(True, alpha=0.2)
-        plt.tight_layout()
-        plt.show()
 
     # Return consolidated data
     return {
@@ -367,6 +335,7 @@ def print_segment_lengths(segments_by_gesture, fs=2000):
 
 
 path_to_raw = r"C:\Users\leonv\AIBE_LAB_new\aibe_ins_lab_recordings\raw"
+path_to_output = r"C:\Users\leonv\AIBE_LAB_new\output"
 
 # Get dataset and structure raw data:
 ds = dataset(path_to_raw)
@@ -378,18 +347,34 @@ bad_channels = [9,32,33,34,35,36,37]
 filter_list = ['bandpass', 'notch']
 preprocessor.remove_bad_channel(bad_channels)
 preprocessor.filter_signal(filter_list)
-segments = preprocessor.cut_signal()
+segments = preprocessor.cut_signal(truncate_to_shortest=False)
 
-# Repeatability:
-repeatability_analyzer = analyse_repeatability(segments, data_dict)
-repeatability_analyzer.get_features()
-repeatability_analyzer.get_df_from_segments()
-repeatability_analyzer.get_repeat_metrics()
+if False:
+    # Repeatability:
+    repeatability_analyzer = analyse_repeatability(segments, data_dict)
+    repeatability_analyzer.get_features()
+    df_repeat = repeatability_analyzer.get_df_from_segments()
+    metric_dict, metrics_df = repeatability_analyzer.get_repeat_metrics()
+
+    # Visualize Repeatability:
+    repeatability_visualizer = vizualize_repeatability(segments, data_dict, df_repeat, metric_dict, metrics_df, path_to_output)
+    repeatability_visualizer.plot_heatmap_features_gestures_per_participant(True)
+    repeatability_visualizer.plot_feature_repeat_ranking(True)
+    repeatability_visualizer.plot_gesture_repeat_ranking(True)
+    repeatability_visualizer.plot_mixed_model_results(True)
+
+# Classification:
+if True:
+    split_data_per_part, label_map = get_data_for_model(segments) # get training and testing split for each participant
+    train_model_for_part(split_data_per_part,'franzi', label_map, path_to_output)
+    train_model_for_part(split_data_per_part,'mohammad', label_map, path_to_output)
+    train_model_for_part(split_data_per_part,'leon', label_map, path_to_output)
+
 
 #print_segment_lengths(segments)
 
 # Visualize all segments
-plot_all_segments(preprocessor, segments, channel_idx=0, max_segments_per_recording=5)
+#plot_all_segments(preprocessor, segments, channel_idx=0, max_segments_per_recording=4)
 
 proband = 'leon'
 gesture = 'Cellphone'

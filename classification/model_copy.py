@@ -141,7 +141,138 @@ class Model1:
             return probs.cpu().numpy().tolist()[0]
         
 
-class Model2:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class ModelMLP:
+    # This is the MLP from https://link.springer.com/chapter/10.1007/978-3-032-13012-9_12 also used for online!
+    def __init__(self, num_input_features = None) -> None:
+        from sklearn.neural_network import MLPClassifier
+        self.model = MLPClassifier(
+            hidden_layer_sizes=(128,64,8),
+            activation='tanh',
+            solver='adam',
+            learning_rate='adaptive',
+            learning_rate_init=1e-5,
+            max_iter=1000,
+            tol=1e-8
+            )
+        
+        if num_input_features is not None:
+            self.input_size = num_input_features
+        else:
+            self.input_size = 144  # 32 Channels * 3 Features (MAV, RMS, WL)
+            print("Gibscht mir bidde die features, danke!")
+
+        self.num_classes = None
+
+    def fit(self, training_data: Dict[str, Any], testing_data: Dict[str, Any] | None = None) -> None:
+        """
+        Fits the model to the training data.
+        """
+
+        # Detect number of classes
+        unique_labels = np.unique(training_data.get("y"))
+        self.num_classes = len(unique_labels)
+        
+        if self.num_classes < 2:
+            print(f"Warning: Only {self.num_classes} class found ({unique_labels}). "
+                "Classification requires at least 2 different labels.")
+
+        print(f"Starting training MLP with {self.num_classes} classes...")
+
+        self.model.fit(training_data.get("x"), training_data.get("y"))
+        
+
+    def save(self, model_path: str) -> None:
+        """
+        Saves the model state, input size, and num_classes to model_path.
+        """
+        if self.model is None:
+            print("Error: No model to save.")
+            return
+
+        checkpoint = {
+            'model': self.model,
+            'input_size': self.input_size,
+            'num_classes': self.num_classes
+        }
+
+        with open(model_path, "wb") as f:
+            pickle.dump(checkpoint, f)
+        
+        print(f"Model successfully saved to {model_path}")
+
+    def load(self, model_path: str) -> None:
+        """
+        Loads the model from the model_path.
+        """
+        with open(model_path, "rb") as f:
+            checkpoint = pickle.load(f)
+        
+        self.model = checkpoint['model']
+        self.input_size = checkpoint['input_size']
+        self.num_classes = checkpoint['num_classes']
+        
+        print(f"Model successfully loaded from {model_path}")
+
+    def predict(self, x: Any) -> List[float]:
+        """
+        Predicts the output for the input x.
+        Returns a list of class probabilities.
+        
+        x: numpy array of shape (96,)
+        """
+        if self.model is None:
+            raise ValueError("Model has not been trained or loaded yet.")
+
+        # SVC expects 2D array
+        x_2d = np.array(x).reshape(1, -1)
+        # Get probabilities
+        probs = self.model.predict_proba(x_2d)
+        return probs[0].tolist()
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class ModelSVM:
     # This is the SVM / SVC model
     def __init__(self) -> None:
         self.model = SVC(kernel="rbf", probability=True)

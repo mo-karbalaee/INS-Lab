@@ -81,6 +81,9 @@ class analyse_repeatability():
         if self.df_repeat.empty:
             print('first generate df using get_df_from_segments')
 
+        metrics_dict = {}
+        data = []
+
         data_repeat = []
         for (subject, gesture, feature), df_sub in self.df_repeat.groupby(['subject', 'gesture', 'feature']):
             print(df_sub['value'])
@@ -89,6 +92,26 @@ class analyse_repeatability():
             cv = 100*(std/mean)
             sem = std / np.sqrt(len(df_sub['value']))
             # ...
+
+            metrics_dict[(subject, gesture, feature)] = {
+                'mean': mean,
+                'std': std,
+                'cv': cv,
+                'sem': sem
+            }
+
+            data.append({
+                'subject': subject,
+                'gesture': gesture,
+                'feature': feature,
+                'cv': cv
+            })
+
+
+        return metrics_dict, pandas.DataFrame(data)
+
+
+
 
     def get_df_from_segments(self):
         # Plan:
