@@ -20,6 +20,7 @@ and drop the .zip file inside!
 
 Base folder:
  - Repo base folder
+ - output
  - aibe_ins_lab_recordings                  ***
   - zipfilename.zip
 
@@ -29,6 +30,9 @@ go to classification -> dataset.py -> run:
     # get_data_split(path_to_recordings_base)
 
     here path_to_recordings_base is the path to your aibe_ins_lab_recordings folder ***
+
+
+5. Also make an output folder called "output" on the same level as the aibe_ins_lab_recordings folder or the repo base folder for outouts of dataframes and plots
 
 
 not finished yet, just raw and structuring, will need training / testing split (maybe not physically but json or so for indexing)

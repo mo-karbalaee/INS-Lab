@@ -14,6 +14,8 @@ from repeatability.analyse import analyse_repeatability
 from repeatability.visualize import vizualize_repeatability
 from classification.preprocess_for_classification import get_data_for_model
 from classification.trainandevalmodel import train_model_for_part
+from repeatability.visualize_coa import run_spatial_analysis          
+from repeatability.umap_analysis import UMAPAnalysis  
 
 
 
@@ -360,13 +362,21 @@ preprocessor.remove_bad_channel(bad_channels)
 preprocessor.filter_signal(filter_list)
 segments = preprocessor.cut_signal(truncate_to_shortest=False)
 
+#plot_all_segments(preprocessor, segments, channel_idx=0, max_segments_per_recording=4)
 
-print_segment_lengths(segments)
+#print_segment_lengths(segments)
 
-if False:
+if True:
     # Repeatability:
     repeatability_analyzer = analyse_repeatability(segments, data_dict)
     repeatability_analyzer.get_features()
+
+    if True:
+        coa_df, spatial_viz = run_spatial_analysis(segments,save_path=path_to_output,save=True)
+
+        ua = UMAPAnalysis(segments,save_path=path_to_output,fs=2000,n_neighbors=15,min_dist=0.1,metric='euclidean',scale=True)
+        ua.build_features_from_precomputed().fit().plot_all(save=True)
+
     df_repeat = repeatability_analyzer.get_df_from_segments()
     metric_dict, metrics_df = repeatability_analyzer.get_repeat_metrics()
 
@@ -383,6 +393,32 @@ if True:
     train_model_for_part(split_data_per_part,'franzi', label_map, do_8_channels, path_to_output)
     train_model_for_part(split_data_per_part,'mohammad', label_map, do_8_channels, path_to_output)
     train_model_for_part(split_data_per_part,'leon', label_map, do_8_channels, path_to_output)
+
+
+
+
+
+# Also run with 8 channels:
+# Will need to add individual output names, else overwrite
+if True:
+    ds = dataset(path_to_raw)
+    data_dict = ds.get_data()
+    preprocessor = preprocess(data_dict)
+    do_8_channels = True
+    if do_8_channels:
+        bad_channels = [32,33,34,35,36,37]
+    else:
+        bad_channels = [9,32,33,34,35,36,37]
+    filter_list = ['bandpass', 'notch']
+    preprocessor.remove_bad_channel(bad_channels)
+    preprocessor.filter_signal(filter_list)
+    segments = preprocessor.cut_signal(truncate_to_shortest=False)
+
+    if True:
+        split_data_per_part, label_map = get_data_for_model(segments, use_freq=True, do_8_channel=do_8_channels) # get training and testing split for each participant
+        train_model_for_part(split_data_per_part,'franzi', label_map, do_8_channels, path_to_output)
+        train_model_for_part(split_data_per_part,'mohammad', label_map, do_8_channels, path_to_output)
+        train_model_for_part(split_data_per_part,'leon', label_map, do_8_channels, path_to_output)
 
 
 
