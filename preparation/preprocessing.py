@@ -64,14 +64,16 @@ class preprocess():
 
     def cut_signal(self,
                    threshold: float = 0.99,
-                   min_duration_sec: float = 2,
+                   min_duration_sec: float = 4.9,
                    merge_gap_sec: float = 0.05,
                    pad_pre_sec: float = 0.0,
                    pad_post_sec: float = 0.0,
-                   rest_segments: int = 5,
-                   rest_segment_duration_sec: float = 4,
+                   rest_segments: int = 4,
+                   rest_segment_duration_sec: float = 5.4,
                    truncate_to_shortest: bool = True,
-                   fs: int = 2000):
+                   fs: int = 2000,
+                   max_segments = 4
+                   ):
         """Cut each recording into gesture segments based on the active ground truth channel."""
         min_duration = max(1, int(min_duration_sec * fs))
         merge_gap = int(merge_gap_sec * fs)
@@ -94,7 +96,7 @@ class preprocess():
                     if active_gt_idx is None:
                         total_samples = recording['biosignal'].shape[1]
                         left_time = total_samples - rest_segments * rest_segment_length
-                        start_point = round(left_time / rest_segments)
+                        start_point = 7000 #round(left_time / rest_segments)
                         for seg_id in range(rest_segments):
                             start = start_point + (seg_id * rest_segment_length) + (start_point * seg_id)
                             end = start + rest_segment_length
@@ -121,6 +123,9 @@ class preprocess():
 
                     gt_signal = gt[active_gt_idx, :]
                     events = self._find_gesture_events(gt_signal, threshold, min_duration, merge_gap)
+
+                    if len(events) > max_segments:
+                        events = events[:max_segments]
 
                     for seg_id, (start, end) in enumerate(events):
                         start = max(0, start - pad_pre)

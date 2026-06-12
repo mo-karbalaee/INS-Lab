@@ -75,8 +75,18 @@ def evaluate_classifier(
         print(f"Recall: {recall:.4f}")
         print(f"F1 score: {f1:.4f}")
         print("\nClassification report:\n", report)
+        output = []
+        output.append("Evaluation results")
+        output.append("--------------")
+        output.append(f"Accuracy: {accuracy:.4f}")
+        output.append(f"Balanced accuracy: {balanced:.4f}")
+        output.append(f"Precision: {precision:.4f}")
+        output.append(f"Recall: {recall:.4f}")
+        output.append(f"F1 score: {f1:.4f}")
+        output.append("\nClassification report:")
+        output.append(str(report))
 
-    return metrics
+    return metrics, output
 
 
 def plot_confusion_matrix(

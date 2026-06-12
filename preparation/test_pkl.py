@@ -320,6 +320,9 @@ def print_segment_lengths(segments_by_gesture, fs=2000):
             })
 
     df = pd.DataFrame(rows)
+    print(df['gesture'].unique())
+    print(df['gesture'].value_counts())
+    print(sorted(df['gesture'].unique()))
     if df.empty:
         print('No segments found.')
         return df
@@ -327,7 +330,11 @@ def print_segment_lengths(segments_by_gesture, fs=2000):
     df = df.sort_values(['gesture', 'subject', 'recording_index', 'segment_index'])
     pd.set_option('display.max_rows', None)
     pd.set_option('display.max_columns', None)
+    print(df['gesture'].unique())
+    print(df['gesture'].value_counts())
+    print(sorted(df['gesture'].unique()))
     print(df.to_string(index=False))
+    df.to_csv("data_frame")
     return df
 
 
@@ -336,6 +343,7 @@ def print_segment_lengths(segments_by_gesture, fs=2000):
 
 path_to_raw = r"C:\Users\leonv\AIBE_LAB_new\aibe_ins_lab_recordings\raw"
 path_to_output = r"C:\Users\leonv\AIBE_LAB_new\output"
+do_8_channels = False
 
 # Get dataset and structure raw data:
 ds = dataset(path_to_raw)
@@ -343,11 +351,17 @@ data_dict = ds.get_data()
 
 # Preprocess:
 preprocessor = preprocess(data_dict)
-bad_channels = [9,32,33,34,35,36,37]
+if do_8_channels:
+    bad_channels = [32,33,34,35,36,37]
+else:
+    bad_channels = [9,32,33,34,35,36,37]
 filter_list = ['bandpass', 'notch']
 preprocessor.remove_bad_channel(bad_channels)
 preprocessor.filter_signal(filter_list)
 segments = preprocessor.cut_signal(truncate_to_shortest=False)
+
+
+print_segment_lengths(segments)
 
 if False:
     # Repeatability:
@@ -365,13 +379,13 @@ if False:
 
 # Classification:
 if True:
-    split_data_per_part, label_map = get_data_for_model(segments) # get training and testing split for each participant
-    train_model_for_part(split_data_per_part,'franzi', label_map, path_to_output)
-    train_model_for_part(split_data_per_part,'mohammad', label_map, path_to_output)
-    train_model_for_part(split_data_per_part,'leon', label_map, path_to_output)
+    split_data_per_part, label_map = get_data_for_model(segments, use_freq=True, do_8_channel=do_8_channels) # get training and testing split for each participant
+    train_model_for_part(split_data_per_part,'franzi', label_map, do_8_channels, path_to_output)
+    train_model_for_part(split_data_per_part,'mohammad', label_map, do_8_channels, path_to_output)
+    train_model_for_part(split_data_per_part,'leon', label_map, do_8_channels, path_to_output)
 
 
-#print_segment_lengths(segments)
+
 
 # Visualize all segments
 #plot_all_segments(preprocessor, segments, channel_idx=0, max_segments_per_recording=4)

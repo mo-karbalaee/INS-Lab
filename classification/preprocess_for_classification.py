@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler
 
 
 
-def get_data_for_model(segments, use_freq = True, normalize = True):
+def get_data_for_model(segments, use_freq = True, do_8_channel = False):
 
     # want to cut the signal into...
     WINDOW_SIZE = 500  # samples -> 250 ms at 2000 Hz
@@ -31,10 +31,13 @@ def get_data_for_model(segments, use_freq = True, normalize = True):
 
                 window = biosignal[:, start:end]  # now shape: (channels, 500)
 
+                if do_8_channel:
+                    window = consolidate_to_eight_channels(window)
+
                 # extract features
 
                 # Time domain features
-
+                #https://www.sciencedirect.com/science/article/pii/S0957417412001200
                 # Mean absolute value
                 mav = np.mean(np.abs(window), axis=1)
                 # Root mean squared
@@ -44,11 +47,11 @@ def get_data_for_model(segments, use_freq = True, normalize = True):
 
                 if use_freq:
                     # Frequency domain features
-
+                    #https://www.intechopen.com/chapters/40123
                     fft_vals = np.fft.rfft(window, axis=1)
                     freqs = np.fft.rfftfreq(window.shape[1], d=1/2000)
                     power = np.abs(fft_vals) ** 2
-
+ 
                     # Peak frequency
                     peak_freq = freqs[np.argmax(power, axis=1)]
                     # Mean frequency
@@ -65,6 +68,11 @@ def get_data_for_model(segments, use_freq = True, normalize = True):
             data_dict[subject][gesture].append(segment_features)
 
 
+    # Debug: print len of seach segments winows
+    #for subject, something in data_dict.items():
+    #    for gesture , lists in something.items():
+    #        for i in range(len(lists)):
+    #            print(len(lists[i]))
 
     split_data_dict = get_training_testing_from_data(data_dict, label_map)
 
@@ -91,10 +99,7 @@ def get_training_testing_from_data(data_dict, label_map):
 
             # Split by segment, not by individual windows.
             # Use the last 3 segments for testing when possible.
-            if len(segment_list) >= 4:
-                n_test_segments = 3
-            else:
-                n_test_segments = max(1, len(segment_list) // 5)
+            n_test_segments = 3
 
             train_segments = segment_list[:-n_test_segments]
             test_segments = segment_list[-n_test_segments:]
@@ -133,3 +138,26 @@ def get_training_testing_from_data(data_dict, label_map):
         }
 
     return results
+
+
+
+def consolidate_to_eight_channels(window):
+    
+    groups = [
+        [0, 1, 16, 17],
+        [2, 3, 18, 19],
+        [4, 5, 20, 21],
+        [6, 7, 22, 23],
+        [8, 24, 25], # remove 9 as it is a bad channel and was also removed for 32 channel emg
+        [10, 11, 26, 27],
+        [12, 13, 28, 29],
+        [14, 15, 30, 31]
+    ]
+    
+    reduced = []
+    
+    for g in groups:
+        feat = window[g, :].mean(axis=0)   # (samples,)
+        reduced.append(feat)
+    
+    return np.stack(reduced, axis=0)       # (8, samples)

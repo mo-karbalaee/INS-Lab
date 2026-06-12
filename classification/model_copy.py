@@ -274,7 +274,7 @@ class ModelMLP:
 
 class ModelSVM:
     # This is the SVM / SVC model
-    def __init__(self) -> None:
+    def __init__(self, num_features = None) -> None:
         self.model = SVC(kernel="rbf", probability=True)
         self.input_size = 96  # 32 Channels * 3 Features (MAV, RMS, WL)
         self.num_classes = None
