@@ -99,6 +99,14 @@ class dataset:
         
         for participant_folder in participant_folders:
             participant_name = participant_folder.name
+            if participant_name == 'leon':
+                participant_name = 'Subject 1'
+
+            if participant_name == 'franzi':
+                participant_name = 'Subject 2'
+
+            if participant_name == 'mohammad':
+                participant_name = 'Subject 3'
             self.recordings[participant_name] = self._load_participant_recordings(participant_folder)
     
     def _load_participant_recordings(self, participant_folder: Path) -> dict:

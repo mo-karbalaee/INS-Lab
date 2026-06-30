@@ -344,7 +344,7 @@ def print_segment_lengths(segments_by_gesture, fs=2000):
 
 
 path_to_raw = r"C:\Users\leonv\AIBE_LAB_new\aibe_ins_lab_recordings\raw"
-path_to_output = r"C:\Users\leonv\AIBE_LAB_new\output"
+path_to_output = r"C:\Users\leonv\AIBE_LAB_new\output2"
 do_8_channels = False
 
 # Get dataset and structure raw data:
@@ -390,11 +390,15 @@ if True:
 # Classification:
 if True:
     split_data_per_part, label_map = get_data_for_model(segments, use_freq=True, do_8_channel=do_8_channels) # get training and testing split for each participant
-    train_model_for_part(split_data_per_part,'franzi', label_map, do_8_channels, path_to_output)
-    train_model_for_part(split_data_per_part,'mohammad', label_map, do_8_channels, path_to_output)
-    train_model_for_part(split_data_per_part,'leon', label_map, do_8_channels, path_to_output)
+    train_model_for_part(split_data_per_part,'Subject 1', label_map, do_8_channels, path_to_output)
+    train_model_for_part(split_data_per_part,'Subject 2', label_map, do_8_channels, path_to_output)
+    train_model_for_part(split_data_per_part,'Subject 3', label_map, do_8_channels, path_to_output)
 
-
+if True:
+    split_data_per_part, label_map = get_data_for_model(segments, use_freq=False, do_8_channel=do_8_channels) # get training and testing split for each participant
+    train_model_for_part(split_data_per_part,'Subject 1', label_map, do_8_channels, path_to_output, use_freq=False)
+    train_model_for_part(split_data_per_part,'Subject 2', label_map, do_8_channels, path_to_output, use_freq=False)
+    train_model_for_part(split_data_per_part,'Subject 3', label_map, do_8_channels, path_to_output, use_freq=False)
 
 
 
@@ -416,9 +420,15 @@ if True:
 
     if True:
         split_data_per_part, label_map = get_data_for_model(segments, use_freq=True, do_8_channel=do_8_channels) # get training and testing split for each participant
-        train_model_for_part(split_data_per_part,'franzi', label_map, do_8_channels, path_to_output)
-        train_model_for_part(split_data_per_part,'mohammad', label_map, do_8_channels, path_to_output)
-        train_model_for_part(split_data_per_part,'leon', label_map, do_8_channels, path_to_output)
+        train_model_for_part(split_data_per_part,'Subject 1', label_map, do_8_channels, path_to_output)
+        train_model_for_part(split_data_per_part,'Subject 2', label_map, do_8_channels, path_to_output)
+        train_model_for_part(split_data_per_part,'Subject 3', label_map, do_8_channels, path_to_output)
+
+
+        split_data_per_part, label_map = get_data_for_model(segments, use_freq=False, do_8_channel=do_8_channels) # get training and testing split for each participant
+        train_model_for_part(split_data_per_part,'Subject 1', label_map, do_8_channels, path_to_output, use_freq=False)
+        train_model_for_part(split_data_per_part,'Subject 2', label_map, do_8_channels, path_to_output, use_freq=False)
+        train_model_for_part(split_data_per_part,'Subject 3', label_map, do_8_channels, path_to_output, use_freq=False)
 
 
 
@@ -431,7 +441,7 @@ gesture = 'Cellphone'
 recording_idx = 1
 channel = 0
 
-example_ground_trouth = preprocessor.return_example_recording(proband, gesture, recording_idx, channel, True)
+#example_ground_trouth = preprocessor.return_example_recording(proband, gesture, recording_idx, channel, True)
 
 
 

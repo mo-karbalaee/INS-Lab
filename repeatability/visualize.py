@@ -37,7 +37,7 @@ class vizualize_repeatability():
             ax.set_yticklabels(pivot.index)
             ax.set_xlabel('Gesture')
             ax.set_ylabel('Feature')
-            ax.set_title(f'Subject {subject} - CV repeatability heatmap')
+            ax.set_title(f'{subject} - CV repeatability heatmap')
 
             for i in range(pivot.shape[0]):
                 for j in range(pivot.shape[1]):

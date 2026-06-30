@@ -2,12 +2,12 @@ from classification.model_copy import ModelMLP, ModelSVM
 from classification.eval import plot_confusion_matrix, plot_training_loss, evaluate_classifier
 
 
-def train_model_for_part(split_data, subject, label_map, do_8_channels = False, path_to_output = None, ):
+def train_model_for_part(split_data, subject, label_map, do_8_channels = False, path_to_output = None, use_freq=True):
     """
     Launch model training for one participant using training data
     """
-    my_model = ModelSVM()
-    model_name = f"SVM_8_{do_8_channels}"
+    my_model = ModelMLP()
+    model_name = f"MLP_8_{do_8_channels}_use_freq_{use_freq}"
     my_model.fit(split_data[subject]['training'], split_data[subject]['testing'])
     if path_to_output is not None:
         my_model.save(f"{path_to_output}/{model_name}_{subject}.pth")
